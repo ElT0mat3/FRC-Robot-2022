@@ -1,0 +1,147 @@
+/*
+  2022 everybot code
+  written by carson graf 
+  don't email me, @ me on discord
+*/
+
+/*
+  This is catastrophically poorly written code for the sake of being easy to follow
+  If you know what the word "refactor" means, you should refactor this code
+*/
+
+package frc.robot;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.VictorSPXControlMode;
+import com.ctre.phoenix.motorcontrol.can.VictorSPX;
+import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkMax.IdleMode;
+import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.motorcontrol.MotorController;
+import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
+import edu.wpi.first.wpilibj.motorcontrol.Victor;
+import edu.wpi.first.wpilibj.motorcontrol.VictorSP;
+import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+public class Robot extends TimedRobot {
+
+    // Definitions for the hardware. Change this if you change what stuff you have
+    // plugged in
+    private final WPI_VictorSPX driveLeftA = new WPI_VictorSPX(1);
+    private final WPI_VictorSPX driveLeftB = new WPI_VictorSPX(2);
+    private final MotorControllerGroup left = new MotorControllerGroup(driveLeftA, driveLeftB);
+
+    private final WPI_VictorSPX driveRightA = new WPI_VictorSPX(3);
+    private final WPI_VictorSPX driveRightB = new WPI_VictorSPX(4);
+    private final MotorControllerGroup right = new MotorControllerGroup(driveRightA, driveRightB);
+
+    // DriveTrain
+    DifferentialDrive DriveTrain = new DifferentialDrive(left, right);
+
+    CANSparkMax arm = new CANSparkMax(5, MotorType.kBrushless);
+    WPI_VictorSPX intake = new WPI_VictorSPX(6);
+
+    // Joystick driverController = new Joystick(0);
+    XboxController driverController = new XboxController(0);
+
+    // timer
+    private final Timer timer = new Timer();
+
+    int counter = 0;
+
+    private WPI_VictorSPX shooter;
+    private WPI_VictorSPX loader;
+    private WPI_VictorSPX shooter1;
+
+    @Override
+    public void robotInit() {
+
+    }
+
+    @Override
+    public void autonomousInit() {
+        counter = 0;
+        timer.reset();
+        timer.start();
+    }
+
+    /** This function is called periodically during autonomous. */
+    @Override
+    public void autonomousPeriodic() {
+
+        counter++;
+
+        if (timer.get() < 2.0) {
+            loader.set(1);
+            shooter.set(-1);
+            shooter1.set(1);
+        } else {
+            loader.set(0);
+            shooter.set(0);
+            shooter1.set(0);
+        }
+
+        if (2.5 < timer.get() && timer.get() < 3.05) {
+            driveRightA.set(1);
+            driveRightB.set(1);
+            driveLeftA.set(1);
+            driveLeftB.set(1);
+        } else {
+            driveRightA.set(0);
+            driveRightB.set(0);
+            driveLeftA.set(0);
+            driveLeftB.set(0);
+        }
+    }
+
+    /** This function is called once when teleop is enabled. */
+    @Override
+    public void teleopInit() {
+    }
+
+    // This function is called periodically during operator control.
+    @Override
+    public void teleopPeriodic() {
+
+        DifferentialDrive drive;
+        drive.arcadeDrive(driverController.getLeftY(), -1 * driverController.getRightX());
+
+        // intake
+        if (driverController.getRawButton(6)) {
+            intake.set(ControlMode.PercentOutput, 1);
+        } else if (driverController.getRawButton(5)) {
+            intake.set(ControlMode.PercentOutput, -1);
+        } else {
+            intake.set(ControlMode.PercentOutput, 0);
+        }
+
+        // arm
+        if (driverController.getRawButton(8)) {
+            arm.set(1);
+        } else if (driverController.getRawButton(7)) {
+            arm.set(-1);
+        } else {
+            arm.set(0);
+        }
+
+    }
+
+    @Override
+    public void disabledInit() {
+        // On disable turn off everything
+        // done to solve issue with motors "remembering" previous setpoints after
+        // reenable
+        driveLeftA.set(0);
+        driveLeftB.set(0);
+        driveRightA.set(0);
+        driveRightB.set(0);
+        arm.set(0);
+        intake.set(ControlMode.PercentOutput, 0);
+    }
+}
